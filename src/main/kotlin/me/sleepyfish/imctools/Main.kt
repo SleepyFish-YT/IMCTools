@@ -157,7 +157,7 @@ object Main {
         "ImGui::InputTextMultiline(" to "ImGui::EndInputText();",
 
         // Columns
-        "ImGui::Columns(" to "ImGui::NextColumn(); ImGui::ColumnsEnd();",
+        "ImGui::Columns(" to "ImGui::ColumnsEnd();",
         "ImGui::BeginColumns(" to "ImGui::EndColumns();",
 
         // Memory editor
