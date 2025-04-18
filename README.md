@@ -14,6 +14,10 @@
   ImVec4(1.0f, 0.5f, 0.0f, 1.0f)    // Float RGBA
   float[4]{0.2f, 0.2f, 0.2f, 1.0f}  // Array style
   ```
+Examples:
+![imgui_draw.cpp:145](https://github.com/user-attachments/assets/d3388d73-ed1b-49de-8a63-4e8d09c368b3)
+![imgui_draw.cpp:193](https://github.com/user-attachments/assets/310a099b-08d6-472e-8e02-275fe016ba3c)
+  
 ### 📏 Smart Code Formatting
 Automatic line breaks for ImGui blocks:
 - Proper indentation for widget hierarchies
@@ -41,8 +45,8 @@ Manual:
 4. Select the .jar
 
 ### 🔌 Compatibility
-Primary IDE: CLion (other JetBrains IDEs may work)
-Languages: C/C++
-ImGui Versions: Works with all Dear ImGui versions
+- Primary IDE: CLion (other JetBrains IDEs may work)
+- Languages: C/C++
+- ImGui Versions: Works with all Dear ImGui versions
 
 ##### Signed by SleepyFish.
