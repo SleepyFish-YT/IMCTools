@@ -1,0 +1,25 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+
+<idea-plugin>
+    <id>me.sleepyfish.imctools</id>
+    <name>IM CLion Tools</name>
+    <vendor>SleepyFish</vendor>
+
+    <description>
+        Supercharge your ImGui workflow in CLion! This plugin adds smarter integration,
+        helpful utilities, and makes ImGui development smoother within JetBrains' C++ IDE.
+    </description>
+
+    <!-- Specify the platform dependency to work with CLion -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.clion.ide</depends>
+    <depends>com.intellij.modules.cidr.ide</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="imc.tools.notifications" displayType="BALLOON"/>
+        <postStartupActivity implementation="me.sleepyfish.imctools.startup.StartupActivity"/>
+        <codeInsight.lineMarkerProvider language="" implementationClass="me.sleepyfish.imctools.providers.ImGuiLineMarkerProvider"/>
+        <!--- <toolWindow id="IMCTools - Documentation" icon="AllIcons.Toolwindows.Documentation" anchor="bottom" factoryClass="me.sleepyfish.imctools.toolwindows.MyDocumentationWindowFactory"/> -->
+    </extensions>
+
+</idea-plugin>

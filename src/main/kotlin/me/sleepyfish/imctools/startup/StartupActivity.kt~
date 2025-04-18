@@ -1,0 +1,42 @@
+package me.sleepyfish.imctools.startup
+
+import com.intellij.ide.plugins.PluginManager
+import com.intellij.openapi.editor.actionSystem.EditorActionManager
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.startup.ProjectActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import me.sleepyfish.imctools.Main
+import me.sleepyfish.imctools.listeners.EnterKeyInterceptor
+import me.sleepyfish.imctools.notification.MyPluginNotifier
+
+class StartupActivity : ProjectActivity {
+
+    override suspend fun execute(project: Project) {
+        MyPluginNotifier.showInfo(project, "Plugin Startup...")
+
+        try {
+            Main.initialize();
+
+            CoroutineScope(Dispatchers.Default).launch {
+                overrideEnterKeyHandler()
+            }
+        } catch (e: Exception) {
+            MyPluginNotifier.showWarning(project, "Plugin Startup Failed: " + e.message)
+            MyPluginNotifier.showInfo(project, "Disable this plugin imminently!")
+
+            // disabling plugin if startup failed
+            PluginManager.disablePlugin("me.sleepyfish.imctools")
+            return
+        }
+
+        MyPluginNotifier.showInfo(project, "Plugin Startup Done!")
+    }
+
+    private fun overrideEnterKeyHandler() {
+        val actionManager = EditorActionManager.getInstance()
+        actionManager.setActionHandler("EditorEnter",EnterKeyInterceptor(actionManager.getActionHandler("EditorEnter")))
+    }
+
+}

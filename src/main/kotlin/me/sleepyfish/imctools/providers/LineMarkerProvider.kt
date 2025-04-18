@@ -1,0 +1,200 @@
+package me.sleepyfish.imctools.providers
+
+import com.intellij.codeInsight.daemon.LineMarkerInfo
+import com.intellij.codeInsight.daemon.LineMarkerProvider
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.editor.markup.GutterIconRenderer
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiWhiteSpace
+import com.intellij.psi.PsiComment
+import com.intellij.ui.ColorChooserService
+import java.awt.Color
+import java.awt.Component
+import java.awt.Graphics
+import javax.swing.Icon
+
+class ImGuiLineMarkerProvider : LineMarkerProvider {
+
+    var currentAddedList = mutableListOf<Int>()
+
+    override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
+        val lineNumber = getLineNumberFromOffset(element)
+        if (currentAddedList.contains(lineNumber)) return null
+        if (element.isWhitespaceOrComment()) {
+            updateIcons()
+            return null
+        }
+
+        if (element.children.isEmpty()) return null
+
+        val text = element.text
+
+        if (text.contains("void")) return null
+        if (!isImColorCall(element)) return null
+
+        val color = tryExtractColor(text) ?: return null
+        val iconElement = createColorElement(color, element)
+        currentAddedList.add(lineNumber)
+        return iconElement
+    }
+
+    private fun createIcon(color: Color): Icon {
+        return object : Icon {
+            override fun paintIcon(c: Component?, g: Graphics, x: Int, y: Int) {
+                g.color = color
+                g.fillRect(x, y, iconWidth, iconHeight)
+            }
+            override fun getIconWidth() = 12
+            override fun getIconHeight() = 12
+        }
+    }
+
+    private fun tryExtractColor(text: String): Color? {
+        val intPattern = """\w+\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+))?\)""".toRegex()
+        val floatPattern = """\w+\((\d*\.?\d+)f?,\s*(\d*\.?\d+)f?,\s*(\d*\.?\d+)f?(?:,\s*(\d*\.?\d+)f?)?\)""".toRegex()
+
+        intPattern.find(text)?.destructured?.let { (r, g, b, a) ->
+            return try {
+                Color(
+                    r.toInt().coerceIn(0, 255),
+                    g.toInt().coerceIn(0, 255),
+                    b.toInt().coerceIn(0, 255),
+                    a.takeIf { it.isNotEmpty() }?.toInt()?.coerceIn(0, 255) ?: 255
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        floatPattern.find(text)?.destructured?.let { (r, g, b, a) ->
+            return try {
+                Color(
+                    (r.toFloat() * 255).toInt().coerceIn(0, 255),
+                    (g.toFloat() * 255).toInt().coerceIn(0, 255),
+                    (b.toFloat() * 255).toInt().coerceIn(0, 255),
+                    (a.takeIf { it.isNotEmpty() }?.toFloat()?.times(255))?.toInt()?.coerceIn(0, 255) ?: 255
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        return null
+    }
+
+    private fun createColorElement(color: Color, element: PsiElement): LineMarkerInfo<PsiElement> {
+        val icon = createIcon(color)
+
+        return LineMarkerInfo(
+            element,
+            element.textRange,
+            icon,
+            { "Click to open color picker" },
+            { _, elt ->
+                val project = elt.project
+                val editor = getEditorForElement(project, elt)
+
+                editor?.let {
+                    ColorChooserService.instance.showPopup(
+                        project,
+                        color,
+                        editor,
+                        { p0, _ ->
+                            WriteCommandAction.runWriteCommandAction(project) {
+                                val document = editor.document
+                                val iconLine = getLineNumberFromOffset(elt)
+                                val lineStart = document.getLineStartOffset(iconLine)
+                                val lineEnd = document.getLineEndOffset(iconLine)
+                                val oldText = document.getText(TextRange(lineStart, lineEnd))
+                                val match = findColorCall(oldText)
+
+                                if (match != null) {
+                                    val (type, args) = match.destructured
+                                    val useFloat = args.contains('.') || args.contains('f')
+
+                                    val newParams =
+                                        if (useFloat) {
+                                            "%.2ff, %.2ff, %.2ff, %.2ff".format(
+                                                p0.red   / 255f, p0.green / 255f,
+                                                p0.blue  / 255f, p0.alpha / 255f
+                                            )
+                                        } else {
+                                            "${p0.red}, ${p0.green}, ${p0.blue}, ${p0.alpha}"
+                                        }
+
+                                    val newText = oldText.replaceRange(match.range, "$type($newParams)")
+                                    document.replaceString(lineStart, lineEnd, newText)
+                                }
+                            }
+                        }, true, true
+                    )
+                }
+            },
+            GutterIconRenderer.Alignment.RIGHT,
+            { "IMCTools-ImColor-ColorPicker" }
+        )
+    }
+
+    private fun getEditorForElement(project: Project, element: PsiElement): Editor? {
+        return EditorFactory.getInstance().getEditors(element.containingFile.fileDocument, project).firstOrNull()
+    }
+
+    private fun PsiElement.isWhitespaceOrComment(): Boolean {
+        return this is PsiWhiteSpace || this is PsiComment
+    }
+
+    private fun isInStringLiteral(element: PsiElement): Boolean {
+        var current = element.parent
+        while (current != null) {
+            if (current.textMatches("\"") || current.text.startsWith("\"")) {
+                return true
+            }
+            current = current.parent
+        }
+
+        return false
+    }
+
+    private fun getLineNumberFromOffset(element: PsiElement): Int {
+        val contain = element.containingFile?: return -1
+        val provider = contain.viewProvider?: return -1
+        val document: Document = provider.document ?: return -1
+        val textRange = element.textRange?: return -1
+        return document.getLineNumber(textRange.startOffset)
+    }
+
+    private fun isImColorCall(element: PsiElement): Boolean {
+        if (isInStringLiteral(element)) return false
+
+        val text = element.text
+        val colorPatterns = listOf(
+            """\bImColor\s*\(\s*(\d+(\.\d+)?f?\s*,\s*){2,3}\d+(\.\d+)?f?\s*\)""",
+            """\bImVec4\s*\(\s*(\d+(\.\d+)?f?\s*,\s*){3}\d+(\.\d+)?f?\s*\)""",
+            """\bfloat\[4\]\s*\(\s*(\d+(\.\d+)?f?\s*,\s*){3}\d+(\.\d+)?f?\s*\)"""
+        )
+
+        return colorPatterns.any { it.toRegex().containsMatchIn(text) }
+    }
+
+    fun updateIcons() {
+        currentAddedList.clear()
+    }
+
+    private fun findColorCall(text: String): MatchResult? {
+        val colorPatterns = listOf(
+            """(ImColor)\s*\(([^)]*)\)""",
+            """(ImVec4)\s*\(([^)]*)\)""",
+            """(float\[4\])\s*\(([^)]*)\)"""
+        )
+
+        return colorPatterns.firstNotNullOfOrNull { pattern ->
+            pattern.toRegex().find(text)
+        }
+    }
+
+}
