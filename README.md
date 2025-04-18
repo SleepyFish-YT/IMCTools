@@ -52,4 +52,4 @@ Manual:
 - Languages: C/C++
 - ImGui Versions: Works with all Dear ImGui versions
 
-##### Signed by SleepyFish.
+###### Signed by SleepyFish.
