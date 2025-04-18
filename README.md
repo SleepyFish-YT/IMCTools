@@ -1,5 +1,5 @@
 # IntelliJ Platform Plugin for CLion
-#### This plugin is made on the IntelliJ Platform Example from JetBrains.
+##### This plugin is made on the IntelliJ Platform Example from JetBrains.
 
 # 🛠️ ImGui Productivity Tools - IMCTools
 **Turbocharge your Dear ImGui workflow with smart color editing + auto-formatting!**  
@@ -45,4 +45,4 @@ Primary IDE: CLion (other JetBrains IDEs may work)
 Languages: C/C++
 ImGui Versions: Works with all Dear ImGui versions
 
-#### Signed by SleepyFish.
+##### Signed by SleepyFish.
