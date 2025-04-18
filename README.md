@@ -34,7 +34,7 @@ Will be autmatically formatted to this:
 ```cpp
 ImGui::Begin("Window");
 {
-  
+  {user_cursor_will_be_set_here}
 }
 ImGui::End();
 ```
