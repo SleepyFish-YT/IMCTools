@@ -16,50 +16,47 @@ class EnterKeyInterceptor(private val originalHandler: EditorActionHandler) : Ed
     override fun execute(editor: Editor, dataContext: DataContext?) {
         val project = editor.project ?: return originalHandler.execute(editor, dataContext)
 
-        val psiFile = PsiDocumentManager.getInstance(project)
-            .getPsiFile(editor.document) ?: return originalHandler.execute(editor, dataContext)
-
         val caret = editor.caretModel.currentCaret
         val document = editor.document
+
         val lineNum = document.getLineNumber(caret.offset)
         val lineStart = document.getLineStartOffset(lineNum)
         val lineEnd = document.getLineEndOffset(lineNum)
         val lineText = document.getText(TextRange(lineStart, lineEnd))
 
-        val currentLineWithCursor = lineText.substring(0, caret.offset - lineStart)
-
         // Check if current line matches any ImGui block start
         val (blockStart, blockEnd) = Main.imguiBlockPairs.entries.firstOrNull { (start, _) ->
-            currentLineWithCursor.contains(start) && currentLineWithCursor.endsWith(");")
+            lineText.contains(start) && lineText.trim().endsWith(");")
         } ?: return originalHandler.execute(editor, dataContext)
 
-        try {
-            // Get indentation
-            val currentLineStart = document.getLineStartOffset(lineNum)
-            val currentLineText = document.getText(TextRange.create(currentLineStart, lineEnd))
-            val tabSpace = currentLineText.takeWhile { it.isWhitespace() }
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastTriggerTime > cooldownMillis) {
+            try {
+                val tabSpace = lineText.takeWhile { it.isWhitespace() }
 
-            WriteCommandAction.runWriteCommandAction(project) {
-                val textToInsert = buildString {
-                    append("${tabSpace}{\n")
-                    append("${tabSpace}    \n") // empty line for cursor
-                    append("${tabSpace}}\n")
-                    append("${tabSpace}$blockEnd")
+                WriteCommandAction.runWriteCommandAction(project) {
+                    val textToInsert = buildString {
+                        append("$tabSpace${lineText.trim()}")
+                        append("$tabSpace{\n")
+                        append("$tabSpace    \n")
+                        append("$tabSpace}\n")
+                        append("$tabSpace$blockEnd")
+                    }
+
+                    // Replace the entire original line with our new structure
+                    document.replaceString(lineStart, lineEnd, textToInsert)
+                    val emptyLineOffset = document.getLineStartOffset(lineNum + 2)
+
+                    ApplicationManager.getApplication().invokeLater {
+                        editor.caretModel.moveToOffset(emptyLineOffset)
+                        editor.scrollingModel.scrollToCaret(ScrollType.CENTER)
+                    }
                 }
 
-                val insertionPoint = document.getLineStartOffset(lineNum + 1) - 1
-                document.insertString(insertionPoint, textToInsert)
-
-                val emptyLineOffset = document.getLineStartOffset(lineNum + 2)
-
-                ApplicationManager.getApplication().invokeLater {
-                    editor.caretModel.moveToOffset(emptyLineOffset)
-                }
-
-                MyPluginNotifier.showInfo(project, "Block " + blockStart + " detected!")
+                lastTriggerTime = currentTime
+            } catch (e: Exception) {
+                MyPluginNotifier.showWarning(project, "Error: ${e.message}")
             }
-        } catch (e: Exception) {
-            MyPluginNotifier.showWarning(project, "Error: ${e.message}")
         }
 
         originalHandler.execute(editor, dataContext)
