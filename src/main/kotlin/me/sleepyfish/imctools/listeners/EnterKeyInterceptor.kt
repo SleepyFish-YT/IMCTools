@@ -11,7 +11,10 @@ import me.sleepyfish.imctools.Main
 import me.sleepyfish.imctools.notification.MyPluginNotifier
 
 class EnterKeyInterceptor(private val originalHandler: EditorActionHandler) : EditorActionHandler() {
-
+    
+    private var lastTriggerTime: Long = 0
+    private val cooldownMillis = 1000L
+    
     @Deprecated("Deprecated in Java")
     override fun execute(editor: Editor, dataContext: DataContext?) {
         val project = editor.project ?: return originalHandler.execute(editor, dataContext)
