@@ -9,16 +9,16 @@
 Click gutter icons to modify colors directly in your code
 Supports all ImGui color formats:
   ```java
-  ImColor color = ImColor(255, 0, 0);               // Integer RGB
-  ImVec4 color = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);    // Float RGBA
-  float color[4] = {0.2f, 0.2f, 0.2f, 1.0f};        // Array style
+  ImColor color = ImColor(255, 0, 0);               // Integer
+  ImVec4 color = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);    // Float
+  float color[4] = {0.2f, 0.2f, 0.2f, 1.0f};        // Array
   ```
 Updated buggy find usage. Now this also will work:
   ```java
-  auto color = ImColor(255, 0, 0);                                                              // Integer RGB
-  ImVec4 color{1.0f, 0.5f, 0.0f, 1.0f};                                                         // Float RGBA
-  float color[4]{0.2f, 0.2f, 0.2f, 1.0f};                                                       // Array style
-  std::vector<ImColor> cols{ImColor(255, 255, 255, 255), ImColor{0.00f, 0.00f, 0.00f, 1.00f}};  // Vector
+  auto color = ImColor(255, 0, 0);                                                             // Integer
+  ImVec4 color{1.0f, 0.5f, 0.0f, 1.0f};                                                        // Float
+  float color[4]{0.2f, 0.2f, 0.2f, 1.0f};                                                      // Array
+  std::vector<ImColor> cols{ImColor(255, 255, 255, 255), ImColor{0.00f, 0.00f, 0.00f, 1.00f}}; // Vector
   ```
 
 ### Examples:
