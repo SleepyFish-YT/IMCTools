@@ -76,7 +76,8 @@ Not Uploaded yet.
 - [X] Fix the [Color Picker](src/main/kotlin/me/sleepyfish/imctools/providers/LineMarkerProvider.kt) code
   - [X] Multiple colors in the same line
   - [X] Leave the users coding style alone
-  - [ ] ImU32 hex format
+  - [X] ImU32 hex format
+  - [X] IM_COL32 macro support
   - [ ] Variables and expressions inside constructors
 - [X] Create [custom .svg icon](src/main/resources/icons/docToolWindow.svg)
   - [X] Create a smaller copy [custom .svg icon](src/main/resources/icons/docToolWindow_2.svg) for the [README.md](README.md)
