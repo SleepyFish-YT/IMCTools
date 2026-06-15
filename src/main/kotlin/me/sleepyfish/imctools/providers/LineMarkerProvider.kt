@@ -199,7 +199,7 @@ class ImGuiLineMarkerProvider : LineMarkerProvider {
             element,
             element.textRange,
             icon,
-            { "Click to open colour picker" },
+            { "Click to open color picker" },
             { _, elt ->
                 val project = elt.project
                 val editor = findEditor(project, elt) ?: return@LineMarkerInfo
