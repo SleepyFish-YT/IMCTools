@@ -22,7 +22,7 @@ Updated buggy find usage. Now this also will work:
   ```
 
 ### Examples:
-### *Same color picker we all love from IntelliJ IDE when working with `jawa.awt.Color`*
+### *Same color picker we all love from IntelliJ IDE when working with `java.awt.Color`*
 ![ihatedefaultimguicolors](github/imctools_color_preview_h_2.png)
 ![mycatcute](github/imctools_color_preview_h.png)
 
