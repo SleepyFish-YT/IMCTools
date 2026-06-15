@@ -15,10 +15,10 @@ Supports all ImGui color formats:
   ```
 Updated buggy find usage. Now this also will work:
   ```java
-  auto color = ImColor(255, 0, 0);                                               // Integer
-  ImVec4 color{0.43f, 0.21f, 0.71f, 1.00f};                                      // Float
-  float color[4]{0.22f, 0.22f, 0.29f, 1.00f};                                    // Array
-  std::vector<ImColor> cols{ImColor(250, 250, 250, 255), ImColor{0, 0, 0, 255}}; // Vector
+  auto color = ImColor(255, 0, 0);                                                // Integer
+  ImVec4 color{0.43f, 0.21f, 0.71f, 1.00f};                                       // Float
+  float color[4]{0.22f, 0.22f, 0.29f, 1.00f};                                     // Array
+  std::vector<ImColor> cols{ImColor(250, 250, 250, 255), ImColor{0, 0, 0, 255}};  // Vector
   ```
 
 ### Examples:
