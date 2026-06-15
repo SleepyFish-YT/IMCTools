@@ -1,18 +1,19 @@
-# ImGui Productivity Tools - IMCTools
+
+# ![logo](src/main/resources/icons/docToolWindow_2.svg) ImGui Productivity Tools - IMCTools
 ### **Turbocharge your Dear ImGui workflow with smart color editing + auto-formatting!**
 ###### This plugin is made on the IntelliJ Platform Example from JetBrains.
 
 # Features
 
 ## Visual Color Picker
-- Click gutter icons to modify colors directly in your code
-- Supports all ImGui color formats:
+Click gutter icons to modify colors directly in your code
+Supports all ImGui color formats:
   ```java
   ImColor color = ImColor(255, 0, 0);               // Integer RGB
   ImVec4 color = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);    // Float RGBA
   float color[4] = {0.2f, 0.2f, 0.2f, 1.0f};        // Array style
   ```
-- Updated buggy find usage. Now this also will work:
+Updated buggy find usage. Now this also will work:
   ```java
   auto color = ImColor(255, 0, 0);                                                              // Integer RGB
   ImVec4 color{1.0f, 0.5f, 0.0f, 1.0f};                                                         // Float RGBA
