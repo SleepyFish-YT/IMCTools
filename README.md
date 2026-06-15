@@ -21,6 +21,18 @@ Updated buggy find usage. Now this also will work:
   std::vector<ImColor> cols{ImColor(250, 250, 250, 255), ImColor{0, 0, 0, 255}};  // Vector
   ```
 
+### Supported Formats (Current)
+| Format | Example |
+|--------|---------|
+| ImColor with ints | `ImColor(255, 0, 0, 255)` |
+| ImColor with floats | `ImColor(1.0f, 0.0f, 0.0f)` |
+| ImVec4 | `ImVec4(1.0f, 0.0f, 0.0f, 1.0f)` |
+| Float array | `float color[4] = {1.0f, 0.0f, 0.0f, 1.0f}` |
+
+### Planned Support
+- ImU32 hex format (0xRRGGBBAA)
+- Variables and expressions inside constructors
+
 ### Examples:
 ### *Same color picker we all love from IntelliJ IDE when working with `java.awt.Color`*
 ![ihatedefaultimguicolors](github/imctools_color_preview_h_2.png)
@@ -61,7 +73,20 @@ Not Uploaded yet.
 - ImGui Versions: Works with all Dear ImGui versions
 
 ## TODO:
-- [X] Fix the color picker 
+- [X] Fix the [Color Picker](src/main/kotlin/me/sleepyfish/imctools/providers/LineMarkerProvider.kt) code
+  - [X] Multiple colors in the same line
+  - [X] Leave the users coding style alone
+  - [ ] ImU32 hex format
+  - [ ] Variables and expressions inside constructors
+- [X] Create [custom .svg icon](src/main/resources/icons/docToolWindow.svg)
+  - [X] Create a smaller copy [custom .svg icon](src/main/resources/icons/docToolWindow_2.svg) for the [README.md](README.md)
+- [X] Make the [README.md](README.md) look better
+- [ ] Add mismatched stack tracker with code highlight
+- [ ] Add duplicate id stack tracker with code highlight
+- [ ] ImGui Window examples to click and paste with previews
+- [ ] Add ImGui documentation in the [Tool Window](src/main/kotlin/me/sleepyfish/imctools/toolwindows/MyDocumentationWindowFactory.kt)
+- [ ] Make the [Tool Window](src/main/kotlin/me/sleepyfish/imctools/toolwindows/MyDocumentationWindowFactory.kt) look better
+  - [ ] Add search functionality
 - [ ] Add Customization for the [Smart Code Formatting](#smart-code-formatting)
 
 
