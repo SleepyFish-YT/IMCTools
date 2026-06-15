@@ -2,8 +2,9 @@
 
 <idea-plugin>
     <id>me.sleepyfish.imctools</id>
-    <name>IM CLion Tools</name>
+    <name>IMCTools</name>
     <vendor>SleepyFish</vendor>
+    <version>1.0.7</version>
 
     <description>
         Supercharge your ImGui workflow in CLion! This plugin adds smarter integration,
@@ -19,7 +20,10 @@
         <notificationGroup id="imc.tools.notifications" displayType="BALLOON"/>
         <postStartupActivity implementation="me.sleepyfish.imctools.startup.StartupActivity"/>
         <codeInsight.lineMarkerProvider language="" implementationClass="me.sleepyfish.imctools.providers.ImGuiLineMarkerProvider"/>
-        <!--- <toolWindow id="IMCTools - Documentation" icon="AllIcons.Toolwindows.Documentation" anchor="bottom" factoryClass="me.sleepyfish.imctools.toolwindows.MyDocumentationWindowFactory"/> -->
+        <toolWindow id="IMCTools - Documentation"
+                    icon="me.sleepyfish.imctools.icons.MyIcons.DocumentationToolWindow"
+                    anchor="right"
+                    factoryClass="me.sleepyfish.imctools.toolwindows.MyDocumentationWindowFactory"/>
     </extensions>
 
 </idea-plugin>

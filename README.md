@@ -1,37 +1,41 @@
-# IntelliJ Platform Plugin for CLion
-##### This plugin is made on the IntelliJ Platform Example from JetBrains.
+# ImGui Productivity Tools - IMCTools
+### **Turbocharge your Dear ImGui workflow with smart color editing + auto-formatting!**
+###### This plugin is made on the IntelliJ Platform Example from JetBrains.
 
-# 🛠️ ImGui Productivity Tools - IMCTools
-**Turbocharge your Dear ImGui workflow with smart color editing + auto-formatting!**  
+# Features
 
-## ✨ Features  
-
-### 🎨 Visual Color Editing
+## Visual Color Picker
 - Click gutter icons to modify colors directly in your code
 - Supports all ImGui color formats:
-  ```cpp
-  ImColor(255, 0, 0)                // Integer RGB
-  ImVec4(1.0f, 0.5f, 0.0f, 1.0f)    // Float RGBA
-  float[4]{0.2f, 0.2f, 0.2f, 1.0f}  // Array style
+  ```java
+  ImColor color = ImColor(255, 0, 0);               // Integer RGB
+  ImVec4 color = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);    // Float RGBA
+  float color[4] = {0.2f, 0.2f, 0.2f, 1.0f};        // Array style
   ```
-  
-### Examples:
+- Updated buggy find usage. Now this also will work:
+  ```java
+  auto color = ImColor(255, 0, 0);                                                              // Integer RGB
+  ImVec4 color{1.0f, 0.5f, 0.0f, 1.0f};                                                         // Float RGBA
+  float color[4]{0.2f, 0.2f, 0.2f, 1.0f};                                                       // Array style
+  std::vector<ImColor> cols{ImColor(255, 255, 255, 255), ImColor{0.00f, 0.00f, 0.00f, 1.00f}};  // Vector
+  ```
 
-![imgui_draw.cpp:145](https://github.com/user-attachments/assets/d3388d73-ed1b-49de-8a63-4e8d09c368b3)
-![imgui_draw.cpp:193](https://github.com/user-attachments/assets/310a099b-08d6-472e-8e02-275fe016ba3c)
-Same color picker we all love from IntelliJ IDE when working with jawa.awt.Color
-  
-### 📏 Smart Code Formatting
+### Examples:
+### *Same color picker we all love from IntelliJ IDE when working with `jawa.awt.Color`*
+![ihatedefaultimguicolors](github/imctools_color_preview_h_2.png)
+![mycatcute](github/imctools_color_preview_h.png)
+
+## Smart Code Formatting
 Automatic line breaks for ImGui blocks:
 - Proper indentation for widget hierarchies
 - Formatting preserves your code style
 
 This code:
-```cpp
+```groovy
 ImGui::Begin("Window"); {user_enter}
 ```
-Will be autmatically formatted to this:
-```cpp
+Will be automatically formatted to this:
+```groovy
 ImGui::Begin("Window");
 {
   {user_cursor_will_be_set_here}
@@ -39,17 +43,24 @@ ImGui::Begin("Window");
 ImGui::End();
 ```
 
-### 🚀 Installation
+## Installation
 Marketplace: Not Uploaded yet.
 Manual:
-1. Download the .jar from releases
-2. Go in your plugins window
-3. Press the gear icon and select install from disk
-4. Select the .jar
+1. Download the .jar from [releases](https://github.com/SleepyFish-YT/IMCTools/releases/latest)
+2. Open [JetBrains CLion](https://www.jetbrains.com/clion/)
+3. Go in your plugins window
+4. Press the gear icon and select "Install plugin from Disk..."
+5. Select the .jar
+#### More information about installation can be found [here](https://www.jetbrains.com/help/idea/managing-plugins.html#install_plugin_from_disk)
 
-### 🔌 Compatibility
-- Primary IDE: CLion (other JetBrains IDEs may work)
+## Compatibility
+- Primary IDE: **CLion `<= 2023.3 (233)`** (other JetBrains IDEs may work)
 - Languages: C/C++
 - ImGui Versions: Works with all Dear ImGui versions
+
+## TODO:
+- [X] Fix the color picker 
+- [ ] Add Customization for the [Smart Code Formatting](#smart-code-formatting)
+
 
 ###### Signed by SleepyFish.

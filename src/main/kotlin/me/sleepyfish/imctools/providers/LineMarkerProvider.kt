@@ -3,15 +3,13 @@ package me.sleepyfish.imctools.providers
 import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
 import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiWhiteSpace
-import com.intellij.psi.PsiComment
 import com.intellij.ui.ColorChooserService
 import java.awt.Color
 import java.awt.Component
@@ -20,181 +18,306 @@ import javax.swing.Icon
 
 class ImGuiLineMarkerProvider : LineMarkerProvider {
 
-    var currentAddedList = mutableListOf<Int>()
+    private data class ColorMatch(
+        val typeName: String,
+        val isFloat: Boolean,
+        val useBraces: Boolean,
+        val color: Color,
+        val callStart: Int,
+        val callEnd: Int,
+    )
+
+    companion object {
+        private val CALL_OPEN = Regex(
+            """(ImColor|ImVec4|float\[4\])\s*([({])"""
+        )
+        private val NUMBER = Regex("""(\d+(?:\.\d+)?)\s*f?""")
+    }
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
-        val lineNumber = getLineNumberFromOffset(element)
-        if (currentAddedList.contains(lineNumber)) return null
-        if (element.isWhitespaceOrComment()) {
-            updateIcons()
+        if (element.firstChild != null)
             return null
-        }
 
-        if (element.children.isEmpty()) return null
+        if (element is PsiWhiteSpace || element is PsiComment)
+            return null
 
-        val text = element.text
+        val tokenText = element.text
+        if (tokenText != "ImColor" && tokenText != "ImVec4" && tokenText != "float")
+            return null
 
-        if (text.contains("void")) return null
-        if (!isImColorCall(element)) return null
+        val callElement = findCallAncestor(element) ?: return null
+        val callText = callElement.text.replace(Regex("""\s+"""), " ")
 
-        val color = tryExtractColor(text) ?: return null
-        val iconElement = createColorElement(color, element)
-        currentAddedList.add(lineNumber)
-        return iconElement
+        if (isInsideStringLiteral(element))
+            return null
+
+        val match = parseColorCall(callText) ?: return null
+
+        return buildLineMarkerInfo(callElement, match)
     }
 
-    private fun createIcon(color: Color): Icon {
-        return object : Icon {
-            override fun paintIcon(c: Component?, g: Graphics, x: Int, y: Int) {
-                g.color = color
-                g.fillRect(x, y, iconWidth, iconHeight)
-            }
-            override fun getIconWidth() = 12
-            override fun getIconHeight() = 12
-        }
-    }
+    private fun findCallAncestor(element: PsiElement): PsiElement? {
+        var current: PsiElement? = element.parent
+        var depth = 0
 
-    private fun tryExtractColor(text: String): Color? {
-        val intPattern = """\w+\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+))?\)""".toRegex()
-        val floatPattern = """\w+\((\d*\.?\d+)f?,\s*(\d*\.?\d+)f?,\s*(\d*\.?\d+)f?(?:,\s*(\d*\.?\d+)f?)?\)""".toRegex()
+        while (current != null && depth < 8) {
+            val normalized = current.text.replace(Regex("""\s+"""), " ").trimStart()
+            val m = CALL_OPEN.find(normalized)
 
-        intPattern.find(text)?.destructured?.let { (r, g, b, a) ->
-            return try {
-                Color(
-                    r.toInt().coerceIn(0, 255),
-                    g.toInt().coerceIn(0, 255),
-                    b.toInt().coerceIn(0, 255),
-                    a.takeIf { it.isNotEmpty() }?.toInt()?.coerceIn(0, 255) ?: 255
-                )
-            } catch (e: Exception) {
-                null
+            if (m != null && m.range.first == 0) {
+                val closeDelim = if (m.groupValues[2] == "{") "}" else ")"
+                if (normalized.contains(closeDelim)) return current
             }
-        }
 
-        floatPattern.find(text)?.destructured?.let { (r, g, b, a) ->
-            return try {
-                Color(
-                    (r.toFloat() * 255).toInt().coerceIn(0, 255),
-                    (g.toFloat() * 255).toInt().coerceIn(0, 255),
-                    (b.toFloat() * 255).toInt().coerceIn(0, 255),
-                    (a.takeIf { it.isNotEmpty() }?.toFloat()?.times(255))?.toInt()?.coerceIn(0, 255) ?: 255
-                )
-            } catch (e: Exception) {
-                null
-            }
+            current = current.parent
+            depth++
         }
 
         return null
     }
 
-    private fun createColorElement(color: Color, element: PsiElement): LineMarkerInfo<PsiElement> {
-        val icon = createIcon(color)
+    private fun isInsideStringLiteral(element: PsiElement): Boolean {
+        var current: PsiElement? = element.parent
 
-        return LineMarkerInfo(
-            element,
-            element.textRange,
-            icon,
-            { "Click to open color picker" },
-            { _, elt ->
-                val project = elt.project
-                val editor = getEditorForElement(project, elt)
-
-                editor?.let {
-                    ColorChooserService.instance.showPopup(
-                        project,
-                        color,
-                        editor,
-                        { p0, _ ->
-                            WriteCommandAction.runWriteCommandAction(project) {
-                                val document = editor.document
-                                val iconLine = getLineNumberFromOffset(elt)
-                                val lineStart = document.getLineStartOffset(iconLine)
-                                val lineEnd = document.getLineEndOffset(iconLine)
-                                val oldText = document.getText(TextRange(lineStart, lineEnd))
-                                val match = findColorCall(oldText)
-
-                                if (match != null) {
-                                    val (type, args) = match.destructured
-                                    val useFloat = args.contains('.') || args.contains('f')
-
-                                    val newParams =
-                                        if (useFloat) {
-                                            "%.2ff, %.2ff, %.2ff, %.2ff".format(
-                                                p0.red   / 255f, p0.green / 255f,
-                                                p0.blue  / 255f, p0.alpha / 255f
-                                            )
-                                        } else {
-                                            "${p0.red}, ${p0.green}, ${p0.blue}, ${p0.alpha}"
-                                        }
-
-                                    val newText = oldText.replaceRange(match.range, "$type($newParams)")
-                                    document.replaceString(lineStart, lineEnd, newText)
-                                }
-                            }
-                        }, true, true
-                    )
-                }
-            },
-            GutterIconRenderer.Alignment.RIGHT,
-            { "IMCTools-ImColor-ColorPicker" }
-        )
-    }
-
-    private fun getEditorForElement(project: Project, element: PsiElement): Editor? {
-        return EditorFactory.getInstance().getEditors(element.containingFile.fileDocument, project).firstOrNull()
-    }
-
-    private fun PsiElement.isWhitespaceOrComment(): Boolean {
-        return this is PsiWhiteSpace || this is PsiComment
-    }
-
-    private fun isInStringLiteral(element: PsiElement): Boolean {
-        var current = element.parent
         while (current != null) {
-            if (current.textMatches("\"") || current.text.startsWith("\"")) {
-                return true
+            val typeName = current.node?.elementType?.toString()?.lowercase() ?: ""
+            if ("string" in typeName || "literal" in typeName && "char" !in typeName) {
+                val text = current.text
+                if (text.startsWith("\"") || text.startsWith("'")) return true
             }
+
             current = current.parent
         }
 
         return false
     }
 
-    private fun getLineNumberFromOffset(element: PsiElement): Int {
-        val contain = element.containingFile?: return -1
-        val provider = contain.viewProvider?: return -1
-        val document: Document = provider.document ?: return -1
-        val textRange = element.textRange?: return -1
-        return document.getLineNumber(textRange.startOffset)
-    }
+    private fun parseColorCall(text: String): ColorMatch? {
+        val openMatch = CALL_OPEN.find(text) ?: return null
+        val typeName = openMatch.groupValues[1]
+        val openDelim = openMatch.groupValues[2]
+        val closeDelim = if (openDelim == "{") "}" else ")"
 
-    private fun isImColorCall(element: PsiElement): Boolean {
-        if (isInStringLiteral(element)) return false
+        val argsStart = openMatch.range.last + 1
+        var depth = 1
+        var idx = argsStart
 
-        val text = element.text
-        val colorPatterns = listOf(
-            """\bImColor\s*\(\s*(\d+(\.\d+)?f?\s*,\s*){2,3}\d+(\.\d+)?f?\s*\)""",
-            """\bImVec4\s*\(\s*(\d+(\.\d+)?f?\s*,\s*){3}\d+(\.\d+)?f?\s*\)""",
-            """\bfloat\[4\]\s*\(\s*(\d+(\.\d+)?f?\s*,\s*){3}\d+(\.\d+)?f?\s*\)"""
-        )
+        while (idx < text.length && depth > 0) {
+            when (text[idx]) {
+                '(', '{' -> depth++
+                ')', '}' -> depth--
+            }
 
-        return colorPatterns.any { it.toRegex().containsMatchIn(text) }
-    }
-
-    fun updateIcons() {
-        currentAddedList.clear()
-    }
-
-    private fun findColorCall(text: String): MatchResult? {
-        val colorPatterns = listOf(
-            """(ImColor)\s*\(([^)]*)\)""",
-            """(ImVec4)\s*\(([^)]*)\)""",
-            """(float\[4\])\s*\(([^)]*)\)"""
-        )
-
-        return colorPatterns.firstNotNullOfOrNull { pattern ->
-            pattern.toRegex().find(text)
+            if (depth > 0)
+                idx++
         }
+
+        if (depth != 0)
+            return null
+
+        val argsEnd = idx
+        val callEnd = argsEnd + 1
+        val argSpan = text.substring(argsStart, argsEnd)
+
+        val args = splitArgs(argSpan)
+        if (args.size < 3 || args.size > 4)
+            return null
+
+        val isFloat = args.any { it.contains('.') || it.trimEnd().endsWith('f') }
+
+        val numbers = args.map { arg ->
+            NUMBER.find(arg.trim())?.groupValues?.get(1)?.toFloatOrNull() ?: return null
+        }
+
+        val color = if (isFloat) {
+            Color(
+                (numbers[0].coerceIn(0f, 1f) * 255).toInt(),
+                (numbers[1].coerceIn(0f, 1f) * 255).toInt(),
+                (numbers[2].coerceIn(0f, 1f) * 255).toInt(),
+                if (numbers.size == 4)
+                    (numbers[3].coerceIn(0f, 1f) * 255).toInt() else 255,
+            )
+        } else {
+            Color(
+                numbers[0].toInt().coerceIn(0, 255),
+                numbers[1].toInt().coerceIn(0, 255),
+                numbers[2].toInt().coerceIn(0, 255),
+                if (numbers.size == 4)
+                    numbers[3].toInt().coerceIn(0, 255) else 255,
+            )
+        }
+
+        return ColorMatch(
+            typeName = typeName,
+            isFloat = isFloat,
+            useBraces = (openDelim == "{"),
+            color = color,
+            callStart = openMatch.range.first,
+            callEnd = callEnd,
+        )
+    }
+
+    private fun splitArgs(args: String): List<String> {
+        val result = mutableListOf<String>()
+        var depth = 0
+        var start = 0
+
+        for (i in args.indices) {
+            when (args[i]) {
+                '(', '{' -> depth++
+                ')', '}' -> depth--
+                ',' -> if (depth == 0) {
+                    result += args.substring(start, i)
+                    start = i + 1
+                }
+            }
+        }
+
+        result += args.substring(start)
+        return result.map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    private fun createIcon(color: Color): Icon = object : Icon {
+        override fun paintIcon(c: Component?, g: Graphics, x: Int, y: Int) {
+            g.color = Color(0, 0, 0, 80)
+            g.drawRect(x, y, iconWidth - 1, iconHeight - 1)
+            g.color = color
+            g.fillRect(x + 1, y + 1, iconWidth - 2, iconHeight - 2)
+        }
+
+        override fun getIconWidth() = 12
+        override fun getIconHeight() = 12
+    }
+
+    private fun buildLineMarkerInfo(
+        element: PsiElement,
+        match: ColorMatch,
+    ): LineMarkerInfo<PsiElement> {
+        val icon = createIcon(match.color)
+
+        return LineMarkerInfo(
+            element,
+            element.textRange,
+            icon,
+            { "Click to open colour picker" },
+            { _, elt ->
+                val project = elt.project
+                val editor = findEditor(project, elt) ?: return@LineMarkerInfo
+
+                ColorChooserService.instance.showPopup(
+                    project,
+                    match.color,
+                    editor,
+                    { newColor, _ ->
+                        applyColorChange(project, editor, elt, match, newColor)
+                    },
+                    true,
+                    true,
+                )
+            },
+            GutterIconRenderer.Alignment.RIGHT,
+            { "IMCTools-ColorPicker-${element.textRange.startOffset}" },
+        )
+    }
+
+    private fun applyColorChange(
+        project: Project,
+        editor: Editor,
+        element: PsiElement,
+        originalMatch: ColorMatch,
+        newColor: Color,
+    ) {
+        WriteCommandAction.runWriteCommandAction(project) {
+            val document = editor.document
+            val elementRange = element.textRange
+            val rawText = document.getText(elementRange)
+
+            val openIdx = rawText.indexOfFirst { it == '(' || it == '{' }
+            if (openIdx == -1)
+                return@runWriteCommandAction
+
+            val closeChar = if (rawText[openIdx] == '{') '}' else ')'
+
+            var depth = 1
+            var closeIdx = openIdx + 1
+
+            while (closeIdx < rawText.length && depth > 0) {
+                when (rawText[closeIdx]) {
+                    '(', '{' -> depth++
+                    ')', '}' -> depth--
+                }
+                if (depth > 0) closeIdx++
+            }
+
+            if (depth != 0)
+                return@runWriteCommandAction
+
+            val argSpan = rawText.substring(openIdx + 1, closeIdx)
+            val argRanges = splitArgRanges(argSpan).map {
+                (it.first + openIdx + 1)..(it.last + openIdx + 1)
+            }
+
+            if (argRanges.size < 3 || argRanges.size > 4)
+                return@runWriteCommandAction
+
+            val useFloat = originalMatch.isFloat
+            val newValues = if (useFloat) listOf(
+                "%.2ff".format(newColor.red   / 255f),
+                "%.2ff".format(newColor.green / 255f),
+                "%.2ff".format(newColor.blue  / 255f),
+                "%.2ff".format(newColor.alpha / 255f),
+            ) else listOf(
+                "${newColor.red}",
+                "${newColor.green}",
+                "${newColor.blue}",
+                "${newColor.alpha}",
+            )
+
+            val docBase = elementRange.startOffset
+            for (i in argRanges.indices.reversed()) {
+                val argText = rawText.substring(argRanges[i])
+                val numMatch = NUMBER.find(argText) ?: continue
+                val numDocStart = docBase + argRanges[i].first + numMatch.range.first
+                val rawAfterNum = argText.substring(numMatch.range.last + 1)
+
+                val hasSuffix = rawAfterNum.trimStart().startsWith('f') &&
+                        (rawAfterNum.trimStart().length == 1 || !rawAfterNum.trimStart()[1].isLetterOrDigit())
+
+                val suffixLen = if (hasSuffix) rawAfterNum.indexOf('f') + 1 else 0
+                val numDocEnd = docBase + argRanges[i].first + numMatch.range.last + 1 + suffixLen
+
+                if (numDocStart < numDocEnd && numDocEnd <= document.textLength) {
+                    document.replaceString(numDocStart, numDocEnd, newValues[i])
+                }
+            }
+        }
+    }
+
+    private fun splitArgRanges(args: String): List<IntRange> {
+        val result = mutableListOf<IntRange>()
+        var depth = 0
+        var start = 0
+
+        for (i in args.indices) {
+            when (args[i]) {
+                '(', '{' -> depth++
+                ')', '}' -> depth--
+                ',' -> if (depth == 0) {
+                    result += start until i
+                    start = i + 1
+                }
+            }
+        }
+
+        result += start until args.length
+        return result
+    }
+
+    private fun findEditor(project: Project, element: PsiElement): Editor? {
+        val file = element.containingFile ?: return null
+        val document = file.viewProvider.document ?: return null
+
+        return EditorFactory.getInstance().getEditors(document, project).firstOrNull()
     }
 
 }

@@ -1,66 +1,131 @@
 package me.sleepyfish.imctools.toolwindows
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
-import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.event.CaretListener
-import com.intellij.openapi.editor.event.CaretEvent
-import com.intellij.openapi.editor.event.EditorFactoryEvent
-import com.intellij.openapi.editor.event.EditorFactoryListener
+import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.components.JBTextArea
+import com.intellij.util.ui.JBUI
+import java.awt.BorderLayout
+import java.awt.Font
 import javax.swing.JLabel
 import javax.swing.JPanel
-import java.awt.BorderLayout
+import javax.swing.SwingConstants
 
-class MyDocumentationWindowFactory : ToolWindowFactory {
+class MyDocumentationWindowFactory : ToolWindowFactory, Disposable {
 
-    var documentationLabel: JLabel? = null
+    private var contentPanel: JPanel? = null
+    private var disposed = false
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        if (disposed) return
 
-        // Create the content panel for the tool window
-        val panel = JPanel(BorderLayout())
+        contentPanel = JPanel(BorderLayout()).apply {
+            // Create header label
+            val documentationLabel = JBLabel("Dear ImGui Documentation", SwingConstants.CENTER).apply {
+                font = Font("Segoe UI", Font.BOLD, 18)
+                border = JBUI.Borders.empty(10)
+            }
 
-        // Create a label to display the documentation (initially empty or with placeholder text)
-        documentationLabel = JLabel("Documentation will appear here")
-        documentationLabel.let { panel.add(it, BorderLayout.CENTER) }
+            // Create documentation text area
+            val documentationText = JBTextArea().apply {
+                isEditable = false
+                lineWrap = true
+                wrapStyleWord = true
+                font = Font("Segoe UI", Font.PLAIN, 14)
+                text = """
+                    Dear ImGui (Immediate Mode Graphical User Interface)
+                    ====================================================
+                    
+                    Overview:
+                    ---------
+                    Dear ImGui is a bloat-free graphical user interface library for C++.
+                    It outputs optimized vertex buffers that you can render in your 3D-pipeline enabled application.
+                    
+                    Key Features:
+                    -------------
+                    • Immediate mode GUI paradigm
+                    • No external dependencies
+                    • Fast and lightweight
+                    • Highly customizable
+                    • Portable (supports multiple rendering backends)
+                    • Minimal state synchronization
+                    
+                    Common Use Cases:
+                    -----------------
+                    • Debugging tools and consoles
+                    • Editor interfaces
+                    • In-game UI
+                    • Configuration dialogs
+                    • Profiling tools
+                    
+                    Supported Platforms:
+                    - Windows, Linux, macOS, iOS, Android
+                    
+                    Supported Rendering Backends:
+                    - DirectX 9/10/11/12, OpenGL 2/3/4, Vulkan, Metal, WebGPU
+                    
+                    Basic Usage Example:
+                    -------------------
+                    // In your render loop
+                    ImGui::Begin("My Window");
+                    ImGui::Text("Hello, world!");
+                    if (ImGui::Button("Click Me")) {
+                        // Handle button click
+                    }
+                    ImGui::End();
+                    
+                    // Render ImGui
+                    ImGui::Render();
+                    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+                    
+                    Getting Started:
+                    ----------------
+                    1. Download ImGui from GitHub: https://github.com/ocornut/imgui
+                    2. Copy the imgui directory to your project
+                    3. Implement backend for your rendering API
+                    4. Initialize ImGui and start creating interfaces
+                    
+                    Useful Resources:
+                    ----------------
+                    • Official Repository: https://github.com/ocornut/imgui
+                    • Wiki: https://github.com/ocornut/imgui/wiki
+                    • Examples: Located in the imgui/examples/ folder
+                """.trimIndent()
+                caretPosition = 0
+            }
 
-        // Access the editor (assuming there is an active editor in the project)
-        val editor = EditorFactory.getInstance().allEditors.firstOrNull()
-        if (editor != null) {
-            // If an editor exists, add the caret listener
-            editor.caretModel.addCaretListener(object : CaretListener {
-                override fun caretPositionChanged(e: CaretEvent) {
-                    updateDocumentation(editor)
-                }
-            })
-        } else {
-            // Wait until an editor becomes available
-            // Register an editor listener to catch when an editor becomes available
-            EditorFactory.getInstance().addEditorFactoryListener(object : EditorFactoryListener {
-                override fun editorCreated(event: EditorFactoryEvent) {
+            val scrollPane = JBScrollPane(documentationText).apply {
+                border = JBUI.Borders.empty()
+                verticalScrollBarPolicy = JBScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
+            }
 
-                    // Add the caret listener once the editor is available
-                        event.editor.caretModel.addCaretListener(object : CaretListener {
-                        override fun caretPositionChanged(e: CaretEvent) {
-                            updateDocumentation(event.editor)
-                        }
-                    })
-                }
+            add(documentationLabel, BorderLayout.NORTH)
+            add(scrollPane, BorderLayout.CENTER)
+        }
 
-                override fun editorReleased(event: EditorFactoryEvent) {
-                }
-            })
+        val contentManager = toolWindow.contentManager
+        val content = contentManager.factory.createContent(contentPanel, "ImGui Info", false)
+
+        // Register this factory as a disposable parent for the content
+        Disposer.register(content, this)
+
+        contentManager.addContent(content)
+    }
+
+    override fun isApplicable(project: Project): Boolean = true
+
+    override fun init(toolWindow: ToolWindow) {
+        toolWindow.setTitle("Dear ImGui Documentation")
+    }
+
+    override fun dispose() {
+        if (!disposed) {
+            disposed = true
+            contentPanel = null
         }
     }
-
-    private fun updateDocumentation(editor: Editor) {
-        // val document = editor.document
-        // val currentLine = document.getLineNumber(editor.caretModel.offset)
-        // val currentLineStart = document.getLineStartOffset(currentLine)
-        // val currentLineText = document.getText(TextRange.create(currentLineStart, document.getLineEndOffset(currentLine)))
-        // MyPluginNotifier.showInfo(editor.project, "Current line text: $currentLineText")
-    }
-
 }

@@ -4,17 +4,17 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.util.TextRange
-import com.intellij.psi.PsiDocumentManager
 import me.sleepyfish.imctools.Main
 import me.sleepyfish.imctools.notification.MyPluginNotifier
 
 class EnterKeyInterceptor(private val originalHandler: EditorActionHandler) : EditorActionHandler() {
-    
+
     private var lastTriggerTime: Long = 0
     private val cooldownMillis = 1000L
-    
+
     @Deprecated("Deprecated in Java")
     override fun execute(editor: Editor, dataContext: DataContext?) {
         val project = editor.project ?: return originalHandler.execute(editor, dataContext)
@@ -27,7 +27,6 @@ class EnterKeyInterceptor(private val originalHandler: EditorActionHandler) : Ed
         val lineEnd = document.getLineEndOffset(lineNum)
         val lineText = document.getText(TextRange(lineStart, lineEnd))
 
-        // Check if current line matches any ImGui block start
         val (blockStart, blockEnd) = Main.imguiBlockPairs.entries.firstOrNull { (start, _) ->
             lineText.contains(start) && lineText.trim().endsWith(");")
         } ?: return originalHandler.execute(editor, dataContext)
@@ -46,7 +45,7 @@ class EnterKeyInterceptor(private val originalHandler: EditorActionHandler) : Ed
                         append("$tabSpace$blockEnd")
                     }
 
-                    // Replace the entire original line with our new structure
+                    // replace line
                     document.replaceString(lineStart, lineEnd, textToInsert)
                     val emptyLineOffset = document.getLineStartOffset(lineNum + 2)
 

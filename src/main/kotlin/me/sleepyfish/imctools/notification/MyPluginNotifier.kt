@@ -12,7 +12,7 @@ object MyPluginNotifier {
     fun showWarning(project: Project?, message: String) {
         val notification = Notification (
             NOTIFICATION_GROUP,
-            "IMCTools - by SleepyFish :3",
+            "IMCTools - by SleepyFish",
             message,
             NotificationType.WARNING
         )
@@ -24,11 +24,12 @@ object MyPluginNotifier {
     fun showInfo(project: Project?, message: String) {
         val notification = Notification (
             NOTIFICATION_GROUP,
-            "IMCTools - by SleepyFish :3",
+            "IMCTools - by SleepyFish",
             message,
             NotificationType.INFORMATION
         )
 
         Notifications.Bus.notify(notification, project)
     }
+
 }
