@@ -45,14 +45,15 @@ ImGui::End();
 ```
 
 ## Installation
-Marketplace: Not Uploaded yet.
-Manual:
+### Marketplace
+Not Uploaded yet.
+### Manual
 1. Download the .jar from [releases](https://github.com/SleepyFish-YT/IMCTools/releases/latest)
 2. Open [JetBrains CLion](https://www.jetbrains.com/clion/)
 3. Go in your plugins window
 4. Press the gear icon and select "Install plugin from Disk..."
 5. Select the .jar
-#### More information about installation can be found [here](https://www.jetbrains.com/help/idea/managing-plugins.html#install_plugin_from_disk)
+#### More information about manual installation can be found [here](https://www.jetbrains.com/help/idea/managing-plugins.html#install_plugin_from_disk).
 
 ## Compatibility
 - Primary IDE: **CLion `<= 2023.3 (233)`** (other JetBrains IDEs may work)
