@@ -19,18 +19,21 @@ Updated buggy find usage. Now this also will work:
   ImVec4 color{0.43f, 0.21f, 0.71f, 1.00f};                                       // Float
   float color[4]{0.22f, 0.22f, 0.29f, 1.00f};                                     // Array
   std::vector<ImColor> cols{ImColor(250, 250, 250, 255), ImColor{0, 0, 0, 255}};  // Vector
+  auto youtubeColor = ImU32(0xFF2941EC);                                          // Hex
+  ImU32 interestingColor = IM_COL32(255, 0, 0, 255);                              // IM_COL32
   ```
 
 ### Supported Formats (Current)
-| Format | Example |
-|--------|---------|
-| ImColor with ints | `ImColor(255, 0, 0, 255)` |
-| ImColor with floats | `ImColor(1.0f, 0.0f, 0.0f)` |
-| ImVec4 | `ImVec4(1.0f, 0.0f, 0.0f, 1.0f)` |
-| Float array | `float color[4] = {1.0f, 0.0f, 0.0f, 1.0f}` |
+| Format           | Example |
+|------------------|--|
+| ImColor (int)    | `ImColor(255, 0, 0, 255)` |
+| ImColor (float)  | `ImColor(1.0f, 0.0f, 0.0f)` |
+| ImVec4           | `ImVec4(1.0f, 0.0f, 0.0f, 1.0f)` |
+| Float array      | `float color[4] = {1.0f, 0.0f, 0.0f, 1.0f}` |
+| ImU32 hex format | `auto color = ImU32(0xFF0000FF)` |
+| IM_COL32 macro   | `ImU32 color = IM_COL32(255, 0, 0, 255)` |
 
 ### Planned Support
-- ImU32 hex format (0xRRGGBBAA)
 - Variables and expressions inside constructors
 
 ### Examples:
